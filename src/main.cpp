@@ -1,5 +1,8 @@
 #include <Arduino.h>
 #include <Servo.h>
+#include <Wire.h>
+#include <MPU6050.h>
+#include "mecanum.hpp"
 
 Servo talonSRX;
 
@@ -15,6 +18,9 @@ Servo talonSRX;
 #define leftStickHorizontalPin 5
 
 #define NOISE_THRESHOLD 100
+
+MPU6050 mpu;
+MecanumDrive drive(0.8);
 
 int forwardSpeed = 0;
 
@@ -36,7 +42,7 @@ struct {
     ChInfo rightStickVertical = {rightStickVerticalPin, false, false, 0, 0.0f};
     ChInfo leftStickVertical = {leftStickVerticalPin, false, false, 0, 0.0f};
     ChInfo leftStickHorizontal = {leftStickHorizontalPin, false, false, 0, 0.0f};
-    // ChInfo channel = {/* pin */2, false, 0};
+    // ChInfo channel = {/* pin */2, false, false, 0, 0.0f};
 } channels;
 
 void updateChannel(ChInfo& channel) {
@@ -66,6 +72,14 @@ void setup() {
     pinMode(leftStickVerticalPin, INPUT);
     pinMode(leftStickHorizontalPin, INPUT);
     talonSRX.attach(6);
+    mpu.begin(MPU6050_SCALE_2000DPS, MPU6050_RANGE_16G);
+    mpu.setAccelPowerOnDelay(MPU6050_DELAY_3MS);
+    
+    mpu.setIntFreeFallEnabled(false);
+    mpu.setIntZeroMotionEnabled(false);
+    mpu.setIntMotionEnabled(false);
+    
+    mpu.setDHPFMode(MPU6050_DHPF_5HZ);
 }
 
 void loop() {
