@@ -20,7 +20,7 @@ Servo talonSRX;
 #define NOISE_THRESHOLD 100
 
 MPU6050 mpu;
-MecanumDrive drive(0.8);
+MecanumDrive drive(0.8, OF_REDUCE_EQUALLY);
 
 int forwardSpeed = 0;
 
