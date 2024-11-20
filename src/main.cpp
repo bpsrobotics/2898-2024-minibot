@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include <ESP32Servo.h>
+#include <Servo.h>
 #include <Wire.h>
 #include <MPU6050.h>
 #include "mecanum.hpp"
