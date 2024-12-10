@@ -1,7 +1,7 @@
 #include "vec.hpp"
 
 struct DriveValues {
-    double frontLeft, frontRight, backLeft, backRight;
+    float frontLeft, frontRight, backLeft, backRight;
 };
 
 DriveValues operator + (DriveValues a, DriveValues b) {
@@ -22,7 +22,7 @@ DriveValues operator - (DriveValues a, DriveValues b) {
     };
 }
 
-DriveValues operator * (DriveValues a, double b) {
+DriveValues operator * (DriveValues a, float b) {
     return {
         a.frontLeft * b,
         a.frontRight * b,
@@ -31,7 +31,7 @@ DriveValues operator * (DriveValues a, double b) {
     };
 }
 
-DriveValues operator / (DriveValues a, double b) {
+DriveValues operator / (DriveValues a, float b) {
     return {
         a.frontLeft / b,
         a.frontRight / b,
@@ -54,21 +54,57 @@ enum OverflowBehavior {
     OF_REDUCE_ALWAYS
 };
 
+enum AsymmetricFixBehavior {
+    AF_MIN_CIRCLE,
+    AF_MIN_SQUARE,
+    AF_FIT
+};
+
+float min(float a, float b) {
+    if (a > b) return b;
+    else return a;
+}
+
+float max(float a, float b) {
+    if (a < b) return b;
+    else return a;
+}
+
 class MecanumDrive {
     public:
-        MecanumDrive(double perpRatio, OverflowBehavior overflow) :
+        MecanumDrive(float perpRatio, OverflowBehavior overflow = OF_REDUCE_EQUALLY, AsymmetricFixBehavior asymm = AF_FIT) :
             perpRatio(perpRatio),
             invPerpRatio(1 / perpRatio),
-            overflow(overflow) {}
-        DriveValues calculate(vec2 motion, double rotation) {
-            double _1 = 0.5 * motion.y, _2 = 0.5 * motion.x * invPerpRatio;
-            double u = _1 + _2;
-            double v = _1 - _2;
+            overflow(overflow),
+            asymm(asymm)
+        {
+            if (asymm == AF_MIN_SQUARE) {
+                multiplier = 4 * perpRatio / sqrtf(2 * perpRatio * perpRatio + 2);
+            } else if (asymm == AF_MIN_CIRCLE) {
+                multiplier = 4 * perpRatio / sqrtf(perpRatio * perpRatio + 1);
+            }
+        }
+        DriveValues calculate(vec2 motion, float rotation) {
+            if (asymm == AF_MIN_SQUARE) {
+                motion *= multiplier;
+            } else if (asymm == AF_MIN_CIRCLE) {
+                motion *= multiplier;
+                float mm = motion.magnitude();
+                if (mm > multiplier) {
+                    motion *= multiplier / mm;
+                }
+            } else {
+                motion.y *= 4;
+                motion.x *= 4 * perpRatio;
+            }
+            float _1 = 0.5f * motion.y, _2 = 0.5f * motion.x * invPerpRatio;
+            float u = _1 + _2;
+            float v = _1 - _2;
             DriveValues move = {
-                0.5 * u,
-                0.5 * v,
-                0.5 * v,
-                0.5 * u
+                0.5f * u,
+                0.5f * v,
+                0.5f * v,
+                0.5f * u
             };
             DriveValues rotate = {
                 rotation,
@@ -79,26 +115,27 @@ class MecanumDrive {
             DriveValues initial = move + rotate;
             if (overflow == OF_NO_REDUCE) return initial;
             if (overflow == OF_REDUCE_ALWAYS) return initial * 0.5;
-            double high = max(max(abs(initial.frontLeft), abs(initial.frontRight)), max(abs(initial.backLeft), abs(initial.backRight)));
+            float high = max(max(fabs(initial.frontLeft), fabs(initial.frontRight)), max(fabs(initial.backLeft), fabs(initial.backRight)));
             if (high <= 1) return initial;
             if (overflow == OF_REDUCE_EQUALLY) {
                 return initial / high;
             } else if (overflow == OF_REDUCE_MOTION) {
-                double reduce = min(min((1 - abs(rotate.frontLeft)) / abs(move.frontLeft),
-                                        (1 - abs(rotate.frontRight)) / abs(move.frontRight)),
-                                    min((1 - abs(rotate.backLeft)) / abs(move.backLeft),
-                                        (1 - abs(rotate.backRight)) / abs(move.backRight)));
+                float reduce = min(min((1 - fabs(rotate.frontLeft)) / fabs(move.frontLeft),
+                                        (1 - fabs(rotate.frontRight)) / fabs(move.frontRight)),
+                                    min((1 - fabs(rotate.backLeft)) / fabs(move.backLeft),
+                                        (1 - fabs(rotate.backRight)) / fabs(move.backRight)));
                 return rotate + move * reduce;
             } else if (overflow == OF_REDUCE_ROTATION) {
-                double reduce = min(min((1 - abs(move.frontLeft)) / abs(rotate.frontLeft),
-                                        (1 - abs(move.frontRight)) / abs(rotate.frontRight)),
-                                    min((1 - abs(move.backLeft)) / abs(rotate.backLeft),
-                                        (1 - abs(move.backRight)) / abs(rotate.backRight)));
+                float reduce = min(min((1 - fabs(move.frontLeft)) / fabs(rotate.frontLeft),
+                                        (1 - fabs(move.frontRight)) / fabs(rotate.frontRight)),
+                                    min((1 - fabs(move.backLeft)) / fabs(rotate.backLeft),
+                                        (1 - fabs(move.backRight)) / fabs(rotate.backRight)));
                 return move + rotate * reduce;
             }
             return initial; // impossible to get here, but just in case
         }
-    private:
         OverflowBehavior overflow;
-        double perpRatio, invPerpRatio;
+        AsymmetricFixBehavior asymm;
+        float perpRatio, invPerpRatio, multiplier;
+    private:
 };

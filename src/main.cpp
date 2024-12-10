@@ -1,27 +1,31 @@
 #include <Arduino.h>
-#include <Servo.h>
 #include <Wire.h>
 #include <MPU6050.h>
 #include "mecanum.hpp"
-
-Servo talonSRX;
+#include "servo-wrapper.hpp"
 
 // Motor pins
-#define frontLeftMotorPin 6
-#define frontRightMotorPin 9
-#define backLeftMotorPin 10
-#define backRightMotorPin 11
+#define frontLeftMotorPin 5
+#define backLeftMotorPin 6
+#define backRightMotorPin 9
+#define frontRightMotorPin 10
 
 #define rightStickHorizontalPin 2
 #define rightStickVerticalPin 3
 #define leftStickVerticalPin 4
-#define leftStickHorizontalPin 5
+#define leftStickHorizontalPin 7
 
 #define NOISE_THRESHOLD 100
 #define CHANNEL_DEADZONE 50
+#define CHANNEL_DEADZONE_CENTER 45
 
 // MPU6050 mpu;
-// MecanumDrive drive(0.8, OF_REDUCE_EQUALLY);
+MecanumDrive drive(1.0 /* todo */, OF_REDUCE_EQUALLY, AF_FIT);
+
+ServoWrapper frontLeft(frontLeftMotorPin);
+ServoWrapper frontRight(frontRightMotorPin);
+ServoWrapper backLeft(backLeftMotorPin);
+ServoWrapper backRight(backRightMotorPin);
 
 int forwardSpeed = 0;
 
@@ -35,17 +39,17 @@ struct ChInfo {
     /* The last time the pin was detected to be `HIGH`, in microseconds since startup. */
     unsigned long onUS;
     /* for debugging */
-    // long delta;
+    long delta, deltaNormalized;
     /* The value of the channel, from `-1.0` to `1.0`. */
     float value;
 };
 
 struct {
     // volatile because they're used in interrupts
-    volatile ChInfo rightStickHorizontal = {rightStickHorizontalPin, false, false, 0, 0.0f};
-    volatile ChInfo rightStickVertical = {rightStickVerticalPin, false, false, 0, 0.0f};
-    volatile ChInfo leftStickVertical = {leftStickVerticalPin, false, false, 0, 0.0f};
-    volatile ChInfo leftStickHorizontal = {leftStickHorizontalPin, false, false, 0, 0.0f};
+    volatile ChInfo rightStickHorizontal = {rightStickHorizontalPin, false, false, 0, 0, 0, 0.0f};
+    volatile ChInfo rightStickVertical = {rightStickVerticalPin, false, false, 0, 0, 0, 0.0f};
+    volatile ChInfo leftStickVertical = {leftStickVerticalPin, false, false, 0, 0, 0, 0.0f};
+    volatile ChInfo leftStickHorizontal = {leftStickHorizontalPin, false, false, 0, 0, 0, 0.0f};
     // ChInfo channel = {/* pin */2, false, false, 0, 0.0f};
 } channels;
 
@@ -64,9 +68,11 @@ void updateChannel(volatile ChInfo& channel) {
             // how long was the pulse?
             long delta = now - channel.onUS;
             if (delta < NOISE_THRESHOLD) return;
+            channel.delta = delta;
             if (delta >= 2000 - CHANNEL_DEADZONE) delta = 2000;
             if (delta <= 1000 + CHANNEL_DEADZONE) delta = 1000;
-            if (abs(delta - 1500) <= CHANNEL_DEADZONE / 2) delta = 1500;
+            if (abs(delta - 1500) <= CHANNEL_DEADZONE_CENTER) delta = 1500;
+            channel.deltaNormalized = delta;
             channel.value = (float)(delta - 1500) / 500.0f;
             channel.valueChanged = true;
         }
@@ -83,7 +89,10 @@ void setup() {
     attachInterrupt(digitalPinToInterrupt(rightStickVerticalPin), []{ updateChannel(channels.rightStickVertical); }, CHANGE);
     attachInterrupt(digitalPinToInterrupt(leftStickVerticalPin), []{ updateChannel(channels.leftStickVertical); }, CHANGE);
     attachInterrupt(digitalPinToInterrupt(leftStickHorizontalPin), []{ updateChannel(channels.leftStickHorizontal); }, CHANGE);
-    // talonSRX.attach(6);
+    frontLeft.begin();
+    frontRight.begin();
+    backLeft.begin();
+    backRight.begin();
     // mpu.begin(MPU6050_SCALE_2000DPS, MPU6050_RANGE_16G);
     // mpu.setAccelPowerOnDelay(MPU6050_DELAY_3MS);
     // 
@@ -95,7 +104,23 @@ void setup() {
 }
 
 void loop() {
-    // should be interpretable by the Serial Plotter in theory
+    DriveValues values = drive.calculate(
+        vec2(
+            channels.rightStickHorizontal.value,
+            channels.rightStickVertical.value
+        ),
+        0.0
+        // channels.leftStickHorizontal.value
+    );
+    frontLeft.drive(values.frontLeft);
+    frontRight.drive(values.frontRight);
+    backLeft.drive(values.backLeft);
+    backRight.drive(values.backRight);
+    // float v = channels.rightStickVertical.value;
+    // frontLeft.drive(v);
+    // frontRight.drive(v);
+    // backLeft.drive(v);
+    // backRight.drive(v);
     Serial.println(
         String("RH:") + channels.rightStickHorizontal.value
             + ", RV:" + channels.rightStickVertical.value

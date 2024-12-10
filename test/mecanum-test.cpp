@@ -1,0 +1,108 @@
+#include "../src/mecanum.hpp"
+#include <stdio.h>
+
+MecanumDrive drive1(1.0 /* todo */, OF_REDUCE_EQUALLY, AF_FIT);
+MecanumDrive drive2(1.0 /* todo */, OF_REDUCE_EQUALLY, AF_MIN_CIRCLE);
+MecanumDrive drive3(1.0 /* todo */, OF_REDUCE_EQUALLY, AF_MIN_SQUARE);
+MecanumDrive drive4(1.0 /* todo */, OF_REDUCE_MOTION, AF_FIT);
+MecanumDrive drive5(1.0 /* todo */, OF_REDUCE_MOTION, AF_MIN_CIRCLE);
+MecanumDrive drive6(1.0 /* todo */, OF_REDUCE_MOTION, AF_MIN_SQUARE);
+MecanumDrive drive7(1.0 /* todo */, OF_REDUCE_ROTATION, AF_FIT);
+MecanumDrive drive8(1.0 /* todo */, OF_REDUCE_ROTATION, AF_MIN_CIRCLE);
+MecanumDrive drive9(1.0 /* todo */, OF_REDUCE_ROTATION, AF_MIN_SQUARE);
+MecanumDrive drive10(1.0 /* todo */, OF_NO_REDUCE, AF_FIT);
+MecanumDrive drive11(1.0 /* todo */, OF_NO_REDUCE, AF_MIN_CIRCLE);
+MecanumDrive drive12(1.0 /* todo */, OF_NO_REDUCE, AF_MIN_SQUARE);
+MecanumDrive drive13(1.0 /* todo */, OF_REDUCE_ALWAYS, AF_FIT);
+MecanumDrive drive14(1.0 /* todo */, OF_REDUCE_ALWAYS, AF_MIN_CIRCLE);
+MecanumDrive drive15(1.0 /* todo */, OF_REDUCE_ALWAYS, AF_MIN_SQUARE);
+
+void testDrive(MecanumDrive& drive) {
+    DriveValues values;
+    printf("drive.multiplier: %f\n", drive.multiplier);
+    values = drive.calculate(vec2(0, 1), 0);
+    printf("forward: %f, %f, %f, %f\n", values.frontLeft, values.frontRight, values.backLeft, values.backRight);
+    values = drive.calculate(vec2(0, -1), 0);
+    printf("backward: %f, %f, %f, %f\n", values.frontLeft, values.frontRight, values.backLeft, values.backRight);
+    values = drive.calculate(vec2(1, 0), 0);
+    printf("right: %f, %f, %f, %f\n", values.frontLeft, values.frontRight, values.backLeft, values.backRight);
+    values = drive.calculate(vec2(-1, 0), 0);
+    printf("left: %f, %f, %f, %f\n", values.frontLeft, values.frontRight, values.backLeft, values.backRight);
+    values = drive.calculate(vec2(1, 1), 0);
+    printf("forward-right: %f, %f, %f, %f\n", values.frontLeft, values.frontRight, values.backLeft, values.backRight);
+    values = drive.calculate(vec2(1, -1), 0);
+    printf("backward-right: %f, %f, %f, %f\n", values.frontLeft, values.frontRight, values.backLeft, values.backRight);
+    values = drive.calculate(vec2(-1, -1), 0);
+    printf("backward-left: %f, %f, %f, %f\n", values.frontLeft, values.frontRight, values.backLeft, values.backRight);
+    values = drive.calculate(vec2(-1, 1), 0);
+    printf("forward-left: %f, %f, %f, %f\n", values.frontLeft, values.frontRight, values.backLeft, values.backRight);
+    values = drive.calculate(vec2(0, 0), 1);
+    printf("clockwise: %f, %f, %f, %f\n", values.frontLeft, values.frontRight, values.backLeft, values.backRight);
+    values = drive.calculate(vec2(0, 0), -1);
+    printf("counterclockwise: %f, %f, %f, %f\n", values.frontLeft, values.frontRight, values.backLeft, values.backRight);
+    values = drive.calculate(vec2(0, 1), 1);
+    printf("forward-clockwise: %f, %f, %f, %f\n", values.frontLeft, values.frontRight, values.backLeft, values.backRight);
+    values = drive.calculate(vec2(0, -1), 1);
+    printf("backward-clockwise: %f, %f, %f, %f\n", values.frontLeft, values.frontRight, values.backLeft, values.backRight);
+    values = drive.calculate(vec2(1, 0), 1);
+    printf("right-clockwise: %f, %f, %f, %f\n", values.frontLeft, values.frontRight, values.backLeft, values.backRight);
+    values = drive.calculate(vec2(-1, 0), 1);
+    printf("left-clockwise: %f, %f, %f, %f\n", values.frontLeft, values.frontRight, values.backLeft, values.backRight);
+    values = drive.calculate(vec2(1, 1), 1);
+    printf("forward-right-clockwise: %f, %f, %f, %f\n", values.frontLeft, values.frontRight, values.backLeft, values.backRight);
+    values = drive.calculate(vec2(1, -1), 1);
+    printf("backward-right-clockwise: %f, %f, %f, %f\n", values.frontLeft, values.frontRight, values.backLeft, values.backRight);
+    values = drive.calculate(vec2(-1, -1), 1);
+    printf("backward-left-clockwise: %f, %f, %f, %f\n", values.frontLeft, values.frontRight, values.backLeft, values.backRight);
+    values = drive.calculate(vec2(-1, 1), 1);
+    printf("forward-left-clockwise: %f, %f, %f, %f\n", values.frontLeft, values.frontRight, values.backLeft, values.backRight);
+    values = drive.calculate(vec2(0, 1), -1);
+    printf("forward-counterclockwise: %f, %f, %f, %f\n", values.frontLeft, values.frontRight, values.backLeft, values.backRight);
+    values = drive.calculate(vec2(0, -1), -1);
+    printf("backward-counterclockwise: %f, %f, %f, %f\n", values.frontLeft, values.frontRight, values.backLeft, values.backRight);
+    values = drive.calculate(vec2(1, 0), -1);
+    printf("right-counterclockwise: %f, %f, %f, %f\n", values.frontLeft, values.frontRight, values.backLeft, values.backRight);
+    values = drive.calculate(vec2(-1, 0), -1);
+    printf("left-counterclockwise: %f, %f, %f, %f\n", values.frontLeft, values.frontRight, values.backLeft, values.backRight);
+    values = drive.calculate(vec2(1, 1), -1);
+    printf("forward-right-counterclockwise: %f, %f, %f, %f\n", values.frontLeft, values.frontRight, values.backLeft, values.backRight);
+    values = drive.calculate(vec2(1, -1), -1);
+    printf("backward-right-counterclockwise: %f, %f, %f, %f\n", values.frontLeft, values.frontRight, values.backLeft, values.backRight);
+    values = drive.calculate(vec2(-1, -1), -1);
+    printf("backward-left-counterclockwise: %f, %f, %f, %f\n", values.frontLeft, values.frontRight, values.backLeft, values.backRight);
+    values = drive.calculate(vec2(-1, 1), -1);
+    printf("forward-left-counterclockwise: %f, %f, %f, %f\n", values.frontLeft, values.frontRight, values.backLeft, values.backRight);
+}
+
+int main() {
+    printf("MecanumDrive drive1(1.0 /* todo */, OF_REDUCE_EQUALLY, AF_FIT);\n");
+    testDrive(drive1);
+    printf("\n\nMecanumDrive drive2(1.0 /* todo */, OF_REDUCE_EQUALLY, AF_MIN_CIRCLE);\n");
+    testDrive(drive2);
+    printf("\n\nMecanumDrive drive3(1.0 /* todo */, OF_REDUCE_EQUALLY, AF_MIN_SQUARE);\n");
+    testDrive(drive3);
+    printf("\n\nMecanumDrive drive4(1.0 /* todo */, OF_REDUCE_MOTION, AF_FIT);\n");
+    testDrive(drive4);
+    printf("\n\nMecanumDrive drive5(1.0 /* todo */, OF_REDUCE_MOTION, AF_MIN_CIRCLE);\n");
+    testDrive(drive5);
+    printf("\n\nMecanumDrive drive6(1.0 /* todo */, OF_REDUCE_MOTION, AF_MIN_SQUARE);\n");
+    testDrive(drive6);
+    printf("\n\nMecanumDrive drive7(1.0 /* todo */, OF_REDUCE_ROTATION, AF_FIT);\n");
+    testDrive(drive7);
+    printf("\n\nMecanumDrive drive8(1.0 /* todo */, OF_REDUCE_ROTATION, AF_MIN_CIRCLE);\n");
+    testDrive(drive8);
+    printf("\n\nMecanumDrive drive9(1.0 /* todo */, OF_REDUCE_ROTATION, AF_MIN_SQUARE);\n");
+    testDrive(drive9);
+    printf("\n\nMecanumDrive drive10(1.0 /* todo */, OF_NO_REDUCE, AF_FIT);\n");
+    testDrive(drive10);
+    printf("\n\nMecanumDrive drive11(1.0 /* todo */, OF_NO_REDUCE, AF_MIN_CIRCLE);\n");
+    testDrive(drive11);
+    printf("\n\nMecanumDrive drive12(1.0 /* todo */, OF_NO_REDUCE, AF_MIN_SQUARE);\n");
+    testDrive(drive12);
+    printf("\n\nMecanumDrive drive13(1.0 /* todo */, OF_REDUCE_ALWAYS, AF_FIT);\n");
+    testDrive(drive13);
+    printf("\n\nMecanumDrive drive14(1.0 /* todo */, OF_REDUCE_ALWAYS, AF_MIN_CIRCLE);\n");
+    testDrive(drive14);
+    printf("\n\nMecanumDrive drive15(1.0 /* todo */, OF_REDUCE_ALWAYS, AF_MIN_SQUARE);\n");
+    testDrive(drive15);
+}
