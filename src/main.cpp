@@ -1,6 +1,5 @@
 #include <Arduino.h>
 #include <Wire.h>
-#include <MPU6050.h>
 #include "mecanum.hpp"
 #include "servo-wrapper.hpp"
 
@@ -19,15 +18,12 @@
 #define CHANNEL_DEADZONE 50
 #define CHANNEL_DEADZONE_CENTER 45
 
-// MPU6050 mpu;
-MecanumDrive drive(1.0 /* todo */, OF_REDUCE_EQUALLY, AF_FIT);
+MecanumDrive drive(1.0 /* todo */, OF_REDUCE_EQUALLY, AF_FIT, TF_FLIP_X | TF_ROTATE_270DEG);
 
 ServoWrapper frontLeft(frontLeftMotorPin);
 ServoWrapper frontRight(frontRightMotorPin);
 ServoWrapper backLeft(backLeftMotorPin);
 ServoWrapper backRight(backRightMotorPin);
-
-int forwardSpeed = 0;
 
 struct ChInfo {
     /* The physical pin the channel is connected to. */
@@ -81,6 +77,8 @@ void updateChannel(volatile ChInfo& channel) {
 
 void setup() {
     Serial.begin(9600);
+    
+    // Controller channel inputs
     pinMode(rightStickHorizontalPin, INPUT);
     pinMode(rightStickVerticalPin, INPUT);
     pinMode(leftStickVerticalPin, INPUT);
@@ -89,18 +87,12 @@ void setup() {
     attachInterrupt(digitalPinToInterrupt(rightStickVerticalPin), []{ updateChannel(channels.rightStickVertical); }, CHANGE);
     attachInterrupt(digitalPinToInterrupt(leftStickVerticalPin), []{ updateChannel(channels.leftStickVertical); }, CHANGE);
     attachInterrupt(digitalPinToInterrupt(leftStickHorizontalPin), []{ updateChannel(channels.leftStickHorizontal); }, CHANGE);
+    
+    // Motors
     frontLeft.begin();
     frontRight.begin();
     backLeft.begin();
     backRight.begin();
-    // mpu.begin(MPU6050_SCALE_2000DPS, MPU6050_RANGE_16G);
-    // mpu.setAccelPowerOnDelay(MPU6050_DELAY_3MS);
-    // 
-    // mpu.setIntFreeFallEnabled(false);
-    // mpu.setIntZeroMotionEnabled(false);
-    // mpu.setIntMotionEnabled(false);
-    // 
-    // mpu.setDHPFMode(MPU6050_DHPF_5HZ);
 }
 
 void loop() {
@@ -109,8 +101,8 @@ void loop() {
             channels.rightStickHorizontal.value,
             channels.rightStickVertical.value
         ),
-        0.0
-        // channels.leftStickHorizontal.value
+        // 0.0
+        channels.leftStickHorizontal.value
     );
     frontLeft.drive(values.frontLeft);
     frontRight.drive(values.frontRight);

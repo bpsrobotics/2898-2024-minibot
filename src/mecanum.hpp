@@ -60,6 +60,14 @@ enum AsymmetricFixBehavior {
     AF_FIT
 };
 
+const uint8_t TF_ROTATE_NONE = 0;
+const uint8_t TF_ROTATE_90DEG = 1;
+const uint8_t TF_ROTATE_180DEG = 2;
+const uint8_t TF_ROTATE_270DEG = 3;
+
+const uint8_t TF_FLIP_X = 4;
+const uint8_t TF_FLIP_Y = 8;
+
 float min(float a, float b) {
     if (a > b) return b;
     else return a;
@@ -72,11 +80,17 @@ float max(float a, float b) {
 
 class MecanumDrive {
     public:
-        MecanumDrive(float perpRatio, OverflowBehavior overflow = OF_REDUCE_EQUALLY, AsymmetricFixBehavior asymm = AF_FIT) :
+        MecanumDrive(
+            float perpRatio,
+            OverflowBehavior overflow = OF_REDUCE_EQUALLY,
+            AsymmetricFixBehavior asymm = AF_FIT,
+            uint8_t transform = 0
+        ) :
             perpRatio(perpRatio),
             invPerpRatio(1 / perpRatio),
             overflow(overflow),
-            asymm(asymm)
+            asymm(asymm),
+            transform(transform)
         {
             if (asymm == AF_MIN_SQUARE) {
                 multiplier = 4 * perpRatio / sqrtf(2 * perpRatio * perpRatio + 2);
@@ -85,6 +99,19 @@ class MecanumDrive {
             }
         }
         DriveValues calculate(vec2 motion, float rotation) {
+            if (transform & TF_FLIP_X) motion.x = -motion.x;
+            if (transform & TF_FLIP_Y) motion.y = -motion.y;
+            switch (transform & 0b11) {
+                case TF_ROTATE_90DEG:
+                    motion = vec2(-motion.y, motion.x);
+                    break;
+                case TF_ROTATE_180DEG:
+                    motion = vec2(-motion.x, -motion.y);
+                    break;
+                case TF_ROTATE_270DEG:
+                    motion = vec2(motion.y, -motion.x);
+                    break;
+            }
             if (asymm == AF_MIN_SQUARE) {
                 motion *= multiplier;
             } else if (asymm == AF_MIN_CIRCLE) {
@@ -137,5 +164,6 @@ class MecanumDrive {
         OverflowBehavior overflow;
         AsymmetricFixBehavior asymm;
         float perpRatio, invPerpRatio, multiplier;
+        uint8_t transform;
     private:
 };
