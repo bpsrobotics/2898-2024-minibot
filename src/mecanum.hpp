@@ -60,13 +60,15 @@ enum AsymmetricFixBehavior {
     AF_FIT
 };
 
-const uint8_t TF_ROTATE_NONE = 0;
-const uint8_t TF_ROTATE_90DEG = 1;
-const uint8_t TF_ROTATE_180DEG = 2;
-const uint8_t TF_ROTATE_270DEG = 3;
+const uint8_t TF_ROTATE_NONE = 0b00;
+const uint8_t TF_ROTATE_90DEG = 0b01;
+const uint8_t TF_ROTATE_180DEG = 0b10;
+const uint8_t TF_ROTATE_270DEG = 0b11;
 
-const uint8_t TF_FLIP_X = 4;
-const uint8_t TF_FLIP_Y = 8;
+const uint8_t TF_FLIP_X = 0b100;
+const uint8_t TF_FLIP_Y = 0b1000;
+
+const uint8_t TF_INVERT_ROTATION = 0b10000;
 
 float min(float a, float b) {
     if (a > b) return b;
@@ -112,6 +114,7 @@ class MecanumDrive {
                     motion = vec2(motion.y, -motion.x);
                     break;
             }
+            if (transform & TF_INVERT_ROTATION) rotation = -rotation;
             if (asymm == AF_MIN_SQUARE) {
                 motion *= multiplier;
             } else if (asymm == AF_MIN_CIRCLE) {
@@ -133,12 +136,28 @@ class MecanumDrive {
                 0.5f * v,
                 0.5f * u
             };
-            DriveValues rotate = {
-                rotation,
-                -rotation,
-                rotation,
-                -rotation
-            };
+            DriveValues rotate =
+                (transform & TF_ROTATE_90DEG) ? DriveValues{
+                    rotation,
+                    rotation,
+                    -rotation,
+                    -rotation
+                } : (transform & TF_ROTATE_180DEG) ? DriveValues{
+                    rotation,
+                    -rotation,
+                    rotation,
+                    -rotation
+                } : (transform & TF_ROTATE_270DEG) ? DriveValues{
+                    -rotation,
+                    -rotation,
+                    rotation,
+                    rotation
+                } : DriveValues{
+                    -rotation,
+                    rotation,
+                    -rotation,
+                    rotation
+                };
             DriveValues initial = move + rotate;
             if (overflow == OF_NO_REDUCE) return initial;
             if (overflow == OF_REDUCE_ALWAYS) return initial * 0.5;
